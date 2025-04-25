@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Web Scraper - {% if is_advanced %}Advanced Scraping{% else %}New Scraping Task{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h2 class="h4 mb-0">
+                    {% if is_advanced %}
+                        <i class="bi bi-gear"></i> Advanced Scraping Task
+                    {% else %}
+                        <i class="bi bi-plus-circle"></i> New Scraping Task
+                    {% endif %}
+                </h2>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong>There were errors in your form submission:</strong>
+                            <ul>
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li><strong>{{ field.label }}</strong>: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.url.id_for_label }}" class="form-label">URL to scrape *</label>
+                        {{ form.url }}
+                        <div class="form-text">Enter the full URL including http:// or https://</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">Task Name *</label>
+                        {{ form.name }}
+                        <div class="form-text">Give your scraping task a descriptive name</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                        {{ form.description }}
+                        <div class="form-text">Optionally describe what you're trying to extract</div>
+                    </div>
+                    
+                    {% if is_advanced %}
+                        <hr>
+                        <h5 class="mb-3">Advanced Options</h5>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.css_selector.id_for_label }}" class="form-label">CSS Selector</label>
+                            {{ form.css_selector }}
+                            <div class="form-text">Choose a predefined selector to extract specific content</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.custom_css_selector.id_for_label }}" class="form-label">Custom CSS Selector</label>
+                            {{ form.custom_css_selector }}
+                            <div class="form-text">Specify a custom CSS selector (overrides the dropdown selection)</div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3 form-check">
+                                    {{ form.extract_images }}
+                                    <label class="form-check-label" for="{{ form.extract_images.id_for_label }}">
+                                        Extract Images
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3 form-check">
+                                    {{ form.extract_links }}
+                                    <label class="form-check-label" for="{{ form.extract_links.id_for_label }}">
+                                        Extract Links
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.max_depth.id_for_label }}" class="form-label">Crawl Depth</label>
+                            {{ form.max_depth }}
+                            <div class="form-text">How many levels of links to follow (0 = current page only)</div>
+                        </div>
+                        <hr>
+                    {% endif %}
+                    
+                    <div class="mb-3 form-check">
+                        {{ form.is_recurring }}
+                        <label class="form-check-label" for="{{ form.is_recurring.id_for_label }}">
+                            Make this a recurring task
+                        </label>
+                    </div>
+                    
+                    <div class="mb-3" id="frequency-field">
+                        <label for="{{ form.run_frequency.id_for_label }}" class="form-label">Run Frequency (hours)</label>
+                        {{ form.run_frequency }}
+                        <div class="form-text">How often to run this task (in hours)</div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Create Task
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        const isRecurringCheckbox = $('#{{ form.is_recurring.id_for_label }}');
+        const frequencyField = $('#frequency-field');
+        
+        // Initial state
+        if (!isRecurringCheckbox.is(':checked')) {
+            frequencyField.hide();
+        }
+        
+        // Toggle frequency field visibility
+        isRecurringCheckbox.change(function() {
+            if ($(this).is(':checked')) {
+                frequencyField.slideDown();
+            } else {
+                frequencyField.slideUp();
+            }
+        });
+    });
+</script>
+{% endblock %}

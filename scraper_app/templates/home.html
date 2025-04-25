@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}Web Scraper - Home{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-globe"></i> My Scraping Tasks</h1>
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-plus-circle"></i> New Scraping Task
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{% url 'task_create' %}">Simple Scrape</a></li>
+                    <li><a class="dropdown-item" href="{% url 'advanced_task_create' %}">Advanced Scrape</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        {% if tasks %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Name</th>
+                            <th>URL</th>
+                            <th>Status</th>
+                            <th>Last Run</th>
+                            <th>Recurring</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in tasks %}
+                            <tr>
+                                <td><a href="{% url 'task_detail' task.id %}">{{ task.name }}</a></td>
+                                <td>
+                                    <a href="{{ task.url }}" target="_blank" class="text-truncate d-inline-block" style="max-width: 250px;">
+                                        {{ task.url }}
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if task.status == 'pending' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif task.status == 'in_progress' %}
+                                        <span class="badge bg-info">In Progress</span>
+                                    {% elif task.status == 'completed' %}
+                                        <span class="badge bg-success">Completed</span>
+                                    {% elif task.status == 'failed' %}
+                                        <span class="badge bg-danger">Failed</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if task.last_run %}
+                                        {{ task.last_run|date:"M d, Y H:i" }}
+                                    {% else %}
+                                        Never
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if task.is_recurring %}
+                                        <span class="badge bg-primary">Yes ({{ task.run_frequency }} hrs)</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">No</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{% url 'task_detail' task.id %}" class="btn btn-info" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'run_task' task.id %}" class="btn btn-success" title="Run Now">
+                                            <i class="bi bi-play-fill"></i>
+                                        </a>
+                                        <a href="{% url 'delete_task' task.id %}" class="btn btn-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if is_paginated %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">&laquo; First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item disabled">
+                            <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+            
+        {% else %}
+            {% if user.is_authenticated %}
+                <div class="card text-center">
+                    <div class="card-body py-5">
+                        <h3 class="card-title mb-3">No Scraping Tasks Yet!</h3>
+                        <p class="card-text mb-4">Create your first scraping task to start exploring the web more effectively.</p>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="{% url 'task_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Simple Scrape
+                            </a>
+                            <a href="{% url 'advanced_task_create' %}" class="btn btn-outline-primary">
+                                <i class="bi bi-gear"></i> Advanced Scrape
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card text-center">
+                    <div class="card-body py-5">
+                        <h3 class="card-title mb-3">Welcome to Web Scraper!</h3>
+                        <p class="card-text mb-4">Please log in to manage your scraping tasks and explore web content.</p>
+                        <a href="{% url 'login' %}" class="btn btn-primary">
+                            <i class="bi bi-box-arrow-in-right"></i> Login
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Refresh task status periodically for in-progress tasks
+    $(document).ready(function() {
+        const inProgressRows = $('span.badge.bg-info:contains("In Progress")').closest('tr');
+        
+        if (inProgressRows.length > 0) {
+            setInterval(function() {
+                inProgressRows.each(function() {
+                    const row = $(this);
+                    const taskId = row.find('a:first').attr('href').split('/').filter(Boolean).pop();
+                    
+                    $.ajax({
+                        url: `/task/${taskId}/status/`,
+                        success: function(data) {
+                            if (data.status !== 'in_progress') {
+                                // Reload page to show updated status
+                                location.reload();
+                            }
+                        }
+                    });
+                });
+            }, 5000); // Check every 5 seconds
+        }
+    });
+</script>
+{% endblock %}
